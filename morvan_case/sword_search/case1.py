@@ -50,20 +50,20 @@ def get_env_feedback(s, a):
 def update_env(s, episode, step_count):
     if s == 'T':
         interaction = 'Episode %s: total steps %s' % (episode+1, step_count+1)
-        print '\r{}'.format(interaction),
+        print('\r{}'.format(interaction), end='')
         time.sleep(1)
-        print '\r      ',
+        print('\r      ', end='')
     else:
         env_list = ['-']*(N_STATES-1)+['T']
         env_list[s] = '0'
         interaction = ''.join(env_list)
-        print '\r{}'.format(interaction),
+        print('\r{}'.format(interaction), end='')
         time.sleep(FRESH_TIME)
 
 
 def rl():
     q_table = build_q_table(N_STATES, ACTIONS)
-    for episode in xrange(N_STATES):
+    for episode in range(N_STATES):
         s = 0
         step_count = 0
         is_terminate = False
@@ -86,4 +86,4 @@ def rl():
 
 if __name__ == '__main__':
     q_table = rl()
-    print q_table
+    print(q_table)
