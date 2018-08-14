@@ -12,10 +12,11 @@ class DeepQNetwork:
             n_actions,
             reward_decay=0.9,
             learning_rate=1e-2,
-            memomery_size=500,
-            e_greedy=0.9,
+            memomery_size=2000,
+            e_greedy_max=0.9,
             replace_iter=300,
             batch_size=50,
+            e_greedy_increment=0.000001,
             output_graph=False
             ):
         self.n_states = n_states
@@ -23,12 +24,13 @@ class DeepQNetwork:
         self.reward_decay = reward_decay
         self.lr = learning_rate
         self.memory_size = memomery_size
-        self.e_greedy = e_greedy
+        self.e_greedy_max = e_greedy_max
         self.replace_iter = replace_iter
         self.learn_step_count = 0
-        self.batch_size = batch_size
         self.output_graph = output_graph
-
+        self.batch_size = batch_size
+        self.e_greedy_increment = e_greedy_increment
+        self.e_greedy = 0 if self.e_greedy_increment else self.e_greedy_max
         self._build_net()
 
         t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
@@ -101,12 +103,14 @@ class DeepQNetwork:
             action = np.argmax(action_value)
         else:
             action = np.random.randint(0, self.n_actions)
+        if self.e_greedy_increment:
+            self.e_greedy += self.e_greedy_increment if self.e_greedy < self.e_greedy_max else 0
+
         return action
 
     def learn(self):
         if self.learn_step_count % self.replace_iter == 0:
             self.sess.run(self.replace_op)
-            print('\ntarget net replaced\n')
 
         if self.memory_counter > self.memory_size:
             sample_index = np.random.choice(self.memory_size, size=self.batch_size)
