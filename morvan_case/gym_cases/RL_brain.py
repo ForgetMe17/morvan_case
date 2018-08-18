@@ -32,6 +32,7 @@ class DeepQNetwork:
         self.e_greedy_increment = e_greedy_increment
         self.e_greedy = 0 if self.e_greedy_increment else self.e_greedy_max
         self._build_net()
+        self.cost_list = []
 
         t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
         e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
@@ -53,8 +54,8 @@ class DeepQNetwork:
         self.r = tf.placeholder(tf.float32, [None, ], name='r')
         self.a = tf.placeholder(tf.int32, [None, ], name='a')
 
-        w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), \
-                                       tf.constant_initializer(0.1)
+        w_initializer, b_initializer = tf.random_normal_initializer(0., 0.1), \
+                                       tf.constant_initializer(0)
 
         with tf.variable_scope('eval_net'):
             eval_l1 = tf.layers.dense(self.s, 20, tf.nn.relu, kernel_initializer=w_initializer,
@@ -126,6 +127,7 @@ class DeepQNetwork:
                 self.r: batch_memory[:, self.n_states+1],
                 self.s_: batch_memory[:, -self.n_states:]
             })
+        self.cost_list.append(cost)
         if self.output_graph:
             summary = self.sess.run(
                 self.addsummary_op,

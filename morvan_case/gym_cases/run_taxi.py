@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 def run_maze():
     step = 0
     train_info = []
-    for episode in range(100000):
+    for episode in range(2000):
         observation = env.reset()
         print('\rin episode %d' % episode, end='')
         ep_reward = 0
