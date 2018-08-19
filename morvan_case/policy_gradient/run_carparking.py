@@ -8,14 +8,15 @@ def run():
     cost_list = []
     step_list = []
     ep_step = 0
-    for ep in range(5000):
+    for ep in range(1000):
         observation = env.reset()
         action_rate = []
+        ep_step = 0
         while True:
+            ep_step += 1
             # if ep_step > 1000:
             #     env.render()
-
-            action, prob = RL.choose_action(observation)
+            action, prob = RL.choose_action(np.array(observation)[np.newaxis])
             action_rate.append(prob)
 
             observation_, reward, done, _ = env.step(action)
@@ -27,14 +28,15 @@ def run():
             # r2 = -abs(theta / theta_thre)
             # reward = r2 + r1
 
-            RL.store_transition(observation, action, reward)
+            RL.store_transition(observation, action, np.float32(reward))
             observation = observation_
 
-            if done:
-                _, ep_loss, ep_step, _ = RL.learn()
-                cost_list.append(ep_loss)
+            if done or ep_step > 10000:
+                if ep_step < 10000:
+                    _, ep_loss, _, _ = RL.learn()
+                    cost_list.append(ep_loss)
                 step_list.append(ep_step)
-                print('in episode %d  ep steps %d  ep loss  %f  mean action rate %f' % (ep, ep_step, ep_loss, np.mean(action_rate)))
+                print('in episode %d  ep steps %d   mean action rate %f' % (ep, ep_step, np.mean(action_rate)))
                 break
     plt.figure()
     plt.plot(cost_list)
@@ -42,9 +44,10 @@ def run():
 
 
 if __name__ == '__main__':
-    env = gym.make('CartPole-v1')
+    env = gym.make('Taxi-v2')
     env = env.unwrapped
-    env.seed(1)
-    RL = PolicyGradient(n_features=env.observation_space.shape[0],
-                        n_actions=env.action_space.n)
+    RL = PolicyGradient(n_features=env.observation_space.n,
+                        n_actions=env.action_space.n,
+                        time_decay=0.9,
+                        learning_rate=0.01)
     run()

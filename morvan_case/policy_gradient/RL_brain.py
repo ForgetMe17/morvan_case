@@ -26,11 +26,12 @@ class PolicyGradient:
     def _build_net(self):
         # policy net
         with tf.variable_scope('Inputs'):
-            self.s = tf.placeholder(tf.float32, [None, self.n_features], name='state')
+            self.s = tf.placeholder(tf.int32, [None, ], name='state')
+            s_one_hot = tf.one_hot(self.s, self.n_features)
         with tf.variable_scope('Policy_net'):
             w_initializer, b_initializer = tf.initializers.random_normal(0, 0.05), tf.initializers.constant(0)
             with tf.variable_scope('fc1'):
-                l1 = tf.layers.dense(self.s, 20, activation=tf.nn.tanh, kernel_initializer=w_initializer,
+                l1 = tf.layers.dense(s_one_hot, 50, activation=tf.nn.tanh, kernel_initializer=w_initializer,
                                      bias_initializer=b_initializer)
                 self.fc1_out = l1
             with tf.variable_scope('fc2'):
@@ -40,24 +41,25 @@ class PolicyGradient:
             with tf.variable_scope('policy_distribution'):
                 self.action_dis = tf.nn.softmax(l2)
         with tf.variable_scope('loss'):
-            self.a = tf.placeholder(tf.int32, [None, 1], name='action')
-            self.s_v = tf.placeholder(tf.float32, [None, 1], name='state_value')
-            log_prob = tf.reduce_sum(-tf.log(self.action_dis)*tf.one_hot(self.a, self.n_actions), axis=1)
+            self.a = tf.placeholder(tf.int32, [None, ], name='action')
+            self.s_v = tf.placeholder(tf.float32, [None, ], name='state_value')
+            # log_prob = tf.reduce_sum(-tf.log(self.action_dis)*tf.one_hot(self.a, self.n_actions), axis=1)
+            log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.a, logits=l2)
             self.log_prob = log_prob
-            self.loss = tf.reduce_mean(log_prob*self.s_v, axis=1)
+            self.loss = tf.reduce_mean(log_prob*self.s_v)
         with tf.variable_scope('train'):
             self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
     def choose_action(self, observation):
         step_prob = self.sess.run(self.action_dis, feed_dict={
-            self.s: observation[np.newaxis, :]
+            self.s: observation
         })
         # print(self.sess.run(self.fc1_out, feed_dict={
         #     self.s: observation[np.newaxis, :]}))
         if not (step_prob == step_prob).all():
             print(observation)
             print(self.sess.run(self.fc1_out, feed_dict={
-                self.s: observation[np.newaxis, :]
+                self.s: observation
             }))
             print(step_prob)
             exit()
@@ -85,9 +87,9 @@ class PolicyGradient:
 
         _, ep_loss, log_prob = self.sess.run(
             [self.train_op, self.loss, self.log_prob], feed_dict={
-                self.s: np.vstack(self.ep_ob),
-                self.a: np.vstack(self.ep_a),
-                self.s_v: np.vstack(discounted_reward)
+                self.s: np.array(self.ep_ob),
+                self.a: np.array(self.ep_a),
+                self.s_v: discounted_reward
             })
 
         self.ep_ob = []
